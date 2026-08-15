@@ -2,57 +2,55 @@ from decimal import Decimal, InvalidOperation
 from io import BytesIO
 from pathlib import Path
 
-from django.utils.html import escape
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.pdfgen import canvas
 
 from .models import CompanyProfile
 
+PAGE_W, PAGE_H = A4
 BLUE = colors.HexColor("#2F69B5")
-DARK_BLUE = colors.HexColor("#285FA8")
+DARK_BLUE = colors.HexColor("#2A5F9E")
+ORANGE = colors.HexColor("#E8942E")
 ROW_GREY = colors.HexColor("#F1F1F1")
 YELLOW = colors.HexColor("#FFD43B")
-BORDER = colors.HexColor("#2F69B5")
 TEXT = colors.HexColor("#202020")
-PAGE_MARGIN = 12 * mm
-CONTENT_WIDTH = A4[0] - (PAGE_MARGIN * 2)  # 186 mm
+BORDER = colors.HexColor("#2F69B5")
+GRID = colors.HexColor("#2F69B5")
 
-FONT_NAME = "Helvetica"
+FONT = "Helvetica"
 FONT_BOLD = "Helvetica-Bold"
 FONT_ITALIC = "Helvetica-Oblique"
 
 
-def _register_inr_font():
-    """Register a Unicode font when available so the ₹ symbol renders correctly."""
-    global FONT_NAME, FONT_BOLD, FONT_ITALIC
-    candidates = [
-        Path(__file__).resolve().parent / "fonts" / "DejaVuSans.ttf",
-        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
-        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
+def _register_fonts():
+    global FONT, FONT_BOLD, FONT_ITALIC
+    locations = [
+        Path(__file__).resolve().parent / "fonts",
+        Path("/usr/share/fonts/truetype/dejavu"),
     ]
-    regular = next((p for p in candidates if p.name == "DejaVuSans.ttf" and p.exists()), None)
-    bold = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
-    italic = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf")
+    for folder in locations:
+        regular = folder / "DejaVuSans.ttf"
+        bold = folder / "DejaVuSans-Bold.ttf"
+        italic = folder / "DejaVuSans-Oblique.ttf"
+        if regular.exists() and bold.exists():
+            try:
+                pdfmetrics.registerFont(TTFont("ITGeniusSans", str(regular)))
+                pdfmetrics.registerFont(TTFont("ITGeniusSansBold", str(bold)))
+                if italic.exists():
+                    pdfmetrics.registerFont(TTFont("ITGeniusSansItalic", str(italic)))
+                FONT = "ITGeniusSans"
+                FONT_BOLD = "ITGeniusSansBold"
+                FONT_ITALIC = "ITGeniusSansItalic" if italic.exists() else FONT
+                return
+            except Exception:
+                pass
 
-    if regular and bold.exists() and italic.exists():
-        try:
-            pdfmetrics.registerFont(TTFont("DejaVuBilling", str(regular)))
-            pdfmetrics.registerFont(TTFont("DejaVuBilling-Bold", str(bold)))
-            pdfmetrics.registerFont(TTFont("DejaVuBilling-Italic", str(italic)))
-            FONT_NAME = "DejaVuBilling"
-            FONT_BOLD = "DejaVuBilling-Bold"
-            FONT_ITALIC = "DejaVuBilling-Italic"
-        except Exception:
-            pass
 
-
-_register_inr_font()
+_register_fonts()
 
 
 def _decimal(value):
@@ -62,334 +60,277 @@ def _decimal(value):
         return Decimal("0.00")
 
 
-def _money(value, symbol=True):
-    amount = f"{_decimal(value):,.2f}"
-    return f"₹ {amount}" if symbol else amount
+def _money(value):
+    return f"₹ {_decimal(value):,.2f}"
 
 
-def _clean(value):
-    return escape(str(value or "")).replace("\n", "<br/>")
+def _date(value):
+    if not value:
+        return "-"
+    try:
+        return value.strftime("%d-%m-%Y")
+    except AttributeError:
+        value = str(value)
+        if len(value) >= 10 and value[4] == "-" and value[7] == "-":
+            return f"{value[8:10]}-{value[5:7]}-{value[:4]}"
+        return value
 
 
-def _draw_page(canvas, doc):
-    canvas.saveState()
-    width, height = A4
-    canvas.setStrokeColor(BORDER)
-    canvas.setLineWidth(1.15)
-    canvas.rect(7 * mm, 7 * mm, width - 14 * mm, height - 14 * mm)
-    canvas.restoreState()
+def _draw_wrapped(c, text, x, y, max_width, size=8, leading=10, font=None, max_lines=3):
+    text = str(text or "").replace("\n", " ").strip()
+    if not text:
+        return y
+    font = font or FONT
+    c.setFont(font, size)
+    words = text.split()
+    lines = []
+    current = ""
+    for word in words:
+        candidate = f"{current} {word}".strip()
+        if not current or c.stringWidth(candidate, font, size) <= max_width:
+            current = candidate
+        else:
+            lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    for line in lines[:max_lines]:
+        c.drawString(x, y, line)
+        y -= leading
+    return y
 
 
-def _styles():
-    base = getSampleStyleSheet()
-    return {
-        "section": ParagraphStyle(
-            "quote_section", parent=base["Normal"], fontName=FONT_BOLD,
-            fontSize=9, leading=10.5, textColor=colors.white,
-        ),
-        "body": ParagraphStyle(
-            "quote_body", parent=base["Normal"], fontName=FONT_NAME,
-            fontSize=8.2, leading=10, textColor=TEXT,
-        ),
-        "small": ParagraphStyle(
-            "quote_small", parent=base["Normal"], fontName=FONT_NAME,
-            fontSize=7.3, leading=8.8, textColor=TEXT,
-        ),
-        "company": ParagraphStyle(
-            "quote_company", parent=base["Normal"], fontName=FONT_NAME,
-            fontSize=17, leading=19, textColor=colors.HexColor("#E8942E"),
-        ),
-        "tagline": ParagraphStyle(
-            "quote_tagline", parent=base["Normal"], fontName=FONT_NAME,
-            fontSize=8, leading=9.5, textColor=TEXT,
-        ),
-        "quote": ParagraphStyle(
-            "quote_title", parent=base["Normal"], fontName=FONT_BOLD,
-            fontSize=24, leading=25, alignment=TA_RIGHT, textColor=DARK_BLUE,
-        ),
-        "footer": ParagraphStyle(
-            "quote_footer", parent=base["Normal"], fontName=FONT_ITALIC,
-            fontSize=9, leading=11, alignment=TA_CENTER, textColor=TEXT,
-        ),
-        "center": ParagraphStyle(
-            "quote_center", parent=base["Normal"], fontName=FONT_NAME,
-            fontSize=8.2, leading=10, alignment=TA_CENTER, textColor=TEXT,
-        ),
-        "right": ParagraphStyle(
-            "quote_right", parent=base["Normal"], fontName=FONT_NAME,
-            fontSize=8.2, leading=10, alignment=TA_RIGHT, textColor=TEXT,
-        ),
-        "right_small": ParagraphStyle(
-            "quote_right_small", parent=base["Normal"], fontName=FONT_NAME,
-            fontSize=7.5, leading=9, alignment=TA_RIGHT, textColor=TEXT,
-        ),
-    }
+def _section(c, title, x, top, width, height=18):
+    c.setFillColor(BLUE)
+    c.rect(x, top - height, width, height, fill=1, stroke=0)
+    c.setFillColor(colors.white)
+    c.setFont(FONT_BOLD, 9)
+    c.drawString(x + 5, top - height + 5, title)
 
 
-def _metadata_table(quotation, styles):
+def _metadata(c, quotation, x, top, width=92 * mm):
+    row_h = 18
+    label_w = 42 * mm
+    value_w = width - label_w
     rows = [
-        ["DATE", _clean(quotation.quotation_date)],
-        ["QUOTE #", _clean(quotation.quotation_number)],
-        ["CUSTOMER ID", _clean(getattr(quotation.customer, "customer_code", "-"))],
-        ["VALID UNTIL", _clean(quotation.valid_until or "-")],
+        ("DATE", _date(getattr(quotation, "quotation_date", None))),
+        ("QUOTE #", str(getattr(quotation, "quotation_number", "-"))),
+        ("CUSTOMER ID", str(getattr(quotation.customer, "customer_code", "-"))),
+        ("VALID UNTIL", _date(getattr(quotation, "valid_until", None))),
     ]
-    table = Table(
-        [[Paragraph(label, styles["small"]), Paragraph(value, styles["center"])] for label, value in rows],
-        colWidths=[31 * mm, 34 * mm],
-        rowHeights=[6.5 * mm] * 4,
-    )
-    table.setStyle(TableStyle([
-        ("GRID", (0, 0), (-1, -1), 0.45, colors.HexColor("#999999")),
-        ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#F6F6F6")),
-        ("FONTNAME", (0, 0), (0, -1), FONT_BOLD),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("ALIGN", (1, 0), (1, -1), "CENTER"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 3),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 3),
-    ]))
-    return table
+    for i, (label, value) in enumerate(rows):
+        y = top - i * row_h
+        c.setFillColor(colors.HexColor("#F6F6F6"))
+        c.rect(x, y - row_h, label_w, row_h, fill=1, stroke=0)
+        c.setFillColor(colors.white)
+        c.rect(x + label_w, y - row_h, value_w, row_h, fill=1, stroke=0)
+        c.setStrokeColor(colors.HexColor("#999999"))
+        c.setLineWidth(0.45)
+        c.rect(x, y - row_h, width, row_h, fill=0, stroke=1)
+        c.line(x + label_w, y - row_h, x + label_w, y)
+        c.setFillColor(TEXT)
+        c.setFont(FONT_BOLD, 7.2)
+        c.drawString(x + 4, y - 12, label)
+        c.setFont(FONT, 7.2)
+        c.drawCentredString(x + label_w + value_w / 2, y - 12, value)
 
 
-def _company_header(company, quotation, styles):
-    logo = Spacer(1, 1)
-    if company.logo:
-        try:
-            logo = Image(company.logo.path, width=18 * mm, height=16 * mm, kind="proportional")
-        except (OSError, ValueError):
-            logo = Spacer(1, 1)
-
-    company_text = [
-        Paragraph(_clean(company.name), styles["company"]),
-    ]
-    if company.tagline:
-        company_text.append(Paragraph(_clean(company.tagline), styles["tagline"]))
-    if company.address:
-        company_text.append(Paragraph(_clean(company.address), styles["small"]))
-    contact = "<br/>".join(
-        f"{label}: {_clean(value)}"
-        for label, value in (
-            ("Website", company.website),
-            ("Phone", company.phone),
-            ("Email", company.email),
-            ("GSTIN", company.gst_number),
-        ) if value
-    )
-    if contact:
-        company_text.append(Paragraph(contact, styles["small"]))
-
-    left = Table([[logo, company_text]], colWidths=[22 * mm, 98 * mm])
-    left.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 0),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 2),
-        ("TOPPADDING", (0, 0), (-1, -1), 0),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-    ]))
-
-    right = Table([
-        [Paragraph("QUOTE", styles["quote"])],
-        [_metadata_table(quotation, styles)],
-    ], colWidths=[65 * mm], rowHeights=[15 * mm, 28 * mm])
-    right.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 0),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ("TOPPADDING", (0, 0), (-1, -1), 0),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-    ]))
-
-    header = Table([[left, right]], colWidths=[120 * mm, 65 * mm])
-    header.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 0),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ("TOPPADDING", (0, 0), (-1, -1), 0),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-    ]))
-    return header
-
-
-def _customer_table(quotation, styles):
+def quotation_pdf(quotation):
+    """Create an A4 quotation using fixed coordinates to match the supplied reference."""
+    company = CompanyProfile.get_default()
     customer = quotation.customer
-    values = [
-        _clean(customer.name),
-        _clean(getattr(customer, "company_name", "")),
-        _clean(getattr(customer, "address", "")),
-        _clean(getattr(customer, "phone", "")),
-        _clean(getattr(customer, "email", "")),
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    c.setTitle(f"Quotation {quotation.quotation_number}")
+    c.setAuthor(str(company.name or "ITGenius Computer"))
+
+    # Reference frame: thin blue border with compact margins.
+    border = 7 * mm
+    left = 14 * mm
+    right = PAGE_W - 14 * mm
+    content_w = right - left
+    c.setStrokeColor(BORDER)
+    c.setLineWidth(1.15)
+    c.rect(border, border, PAGE_W - 2 * border, PAGE_H - 2 * border, fill=0, stroke=1)
+
+    # ------------------------------------------------------------------
+    # Header
+    # ------------------------------------------------------------------
+    top = PAGE_H - 17 * mm
+    logo_w, logo_h = 22 * mm, 18 * mm
+    if getattr(company, "logo", None):
+        try:
+            c.drawImage(company.logo.path, left, top - logo_h + 2, width=logo_w, height=logo_h, preserveAspectRatio=True, mask="auto", anchor="c")
+        except (OSError, ValueError):
+            pass
+
+    company_x = left + 26 * mm
+    c.setFillColor(ORANGE)
+    c.setFont(FONT, 17)
+    c.drawString(company_x, top, str(company.name or "ITGenius Computer"))
+    c.setFillColor(TEXT)
+    info_y = top - 16
+    info_y = _draw_wrapped(c, company.address, company_x, info_y, 250, size=7.7, leading=9, max_lines=2)
+    for label, value in (("Website", company.website), ("Phone", company.phone), ("Email", company.email), ("GSTIN", company.gst_number)):
+        if value:
+            info_y = _draw_wrapped(c, f"{label}: {value}", company_x, info_y, 250, size=7.4, leading=9, max_lines=1)
+
+    c.setFillColor(DARK_BLUE)
+    c.setFont(FONT_BOLD, 25)
+    c.drawRightString(right, top, "QUOTE")
+    _metadata(c, quotation, right - 92 * mm, top - 27, 92 * mm)
+
+    # ------------------------------------------------------------------
+    # Customer block - deliberately left aligned like the reference.
+    # ------------------------------------------------------------------
+    customer_top = top - 104
+    customer_w = 235
+    customer_h = 82
+    _section(c, "CUSTOMER", left, customer_top, customer_w)
+    c.setStrokeColor(colors.HexColor("#777777"))
+    c.setLineWidth(0.6)
+    c.rect(left, customer_top - customer_h, customer_w, customer_h, fill=0, stroke=1)
+    details = [
+        str(getattr(customer, "name", "") or ""),
+        str(getattr(customer, "company_name", "") or ""),
+        str(getattr(customer, "address", "") or ""),
+        str(getattr(customer, "phone", "") or ""),
+        str(getattr(customer, "email", "") or ""),
     ]
     if getattr(customer, "gst_number", ""):
-        values.append(f"GSTIN: {_clean(customer.gst_number)}")
-    details = "<br/>".join(v for v in values if v)
-    table = Table([
-        [Paragraph("CUSTOMER", styles["section"])],
-        [Paragraph(details or "-", styles["body"])],
-    ], colWidths=[78 * mm], rowHeights=[7 * mm, 30 * mm])
-    table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (0, 0), BLUE),
-        ("BOX", (0, 0), (-1, -1), 0.65, colors.HexColor("#777777")),
-        ("LEFTPADDING", (0, 0), (-1, -1), 4),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-        ("TOPPADDING", (0, 0), (-1, -1), 3),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-    ]))
-    return table
+        details.append(f"GSTIN: {customer.gst_number}")
+    cy = customer_top - 31
+    for detail in details:
+        if detail.strip():
+            cy = _draw_wrapped(c, detail, left + 5, cy, customer_w - 10, size=7.8, leading=9.5, max_lines=2)
+            if cy < customer_top - customer_h + 8:
+                break
 
+    # ------------------------------------------------------------------
+    # Item table. Fixed coordinates prevent Platypus from moving sections.
+    # ------------------------------------------------------------------
+    table_top = customer_top - customer_h - 17
+    header_h = 18
+    row_h = 20
+    taxed_w = 48
+    amount_w = 88
+    desc_w = content_w - taxed_w - amount_w
+    x0 = left
+    x1 = x0 + desc_w
+    x2 = x1 + taxed_w
+    x3 = right
 
-def _items_table(quotation, styles):
-    rows = [[
-        Paragraph("DESCRIPTION", styles["section"]),
-        Paragraph("TAXED", styles["section"]),
-        Paragraph("AMOUNT", styles["section"]),
-    ]]
+    c.setFillColor(BLUE)
+    c.rect(x0, table_top - header_h, content_w, header_h, fill=1, stroke=0)
+    c.setFillColor(colors.white)
+    c.setFont(FONT_BOLD, 8.5)
+    c.drawString(x0 + 5, table_top - 12, "DESCRIPTION")
+    c.drawCentredString((x1 + x2) / 2, table_top - 12, "TAXED")
+    c.drawString(x2 + 5, table_top - 12, "AMOUNT")
+
     items = list(quotation.items.select_related("product").all())
+    visible_rows = max(1, min(10, len(items)))
+    if len(items) <= 3:
+        visible_rows = 10
+    table_bottom = table_top - header_h - visible_rows * row_h
 
-    for item in items:
-        description = _clean(item.description or item.product.name)
-        qty = _decimal(item.quantity)
-        if qty != 1:
-            description += f"<br/><font size='7'>Qty: {qty:g} × {_money(item.unit_price)}</font>"
-        rows.append([
-            Paragraph(description, styles["body"]),
-            Paragraph("X" if _decimal(item.gst_rate) > 0 else "", styles["center"]),
-            Paragraph(f"{_decimal(item.amount):,.2f}", styles["right"]),
-        ])
+    for i in range(visible_rows):
+        row_top = table_top - header_h - i * row_h
+        if i % 2 == 1:
+            c.setFillColor(ROW_GREY)
+            c.rect(x0, row_top - row_h, content_w, row_h, fill=1, stroke=0)
+        c.setStrokeColor(GRID)
+        c.setLineWidth(0.55)
+        c.rect(x0, row_top - row_h, content_w, row_h, fill=0, stroke=1)
+        c.line(x1, row_top - row_h, x1, row_top)
+        c.line(x2, row_top - row_h, x2, row_top)
 
-    # The reference has a large blank writing area. Ten item rows gives a compact
-    # A4 layout while leaving enough room for terms and totals.
-    minimum_rows = 10
-    while len(rows) < minimum_rows + 1:
-        rows.append([Paragraph("&nbsp;", styles["body"]), Paragraph("", styles["body"]), Paragraph("", styles["body"])])
+        if i < len(items):
+            item = items[i]
+            description = str(getattr(item, "description", "") or getattr(item.product, "name", ""))
+            qty = _decimal(getattr(item, "quantity", 1))
+            unit_price = _decimal(getattr(item, "unit_price", 0))
+            if qty != 1:
+                description += f" | Qty: {qty:g} × {_money(unit_price)}"
+            c.setFillColor(TEXT)
+            c.setFont(FONT, 7.8)
+            c.drawString(x0 + 5, row_top - 8, description[:105])
+            if _decimal(getattr(item, "gst_rate", 0)) > 0:
+                c.setFont(FONT_BOLD, 8)
+                c.drawCentredString((x1 + x2) / 2, row_top - 13, "X")
+            c.setFont(FONT, 8)
+            c.drawRightString(x3 - 5, row_top - 12, f"{_decimal(getattr(item, 'amount', 0)):,.2f}")
 
-    heights = [7 * mm] + [7 * mm] * (len(rows) - 1)
-    table = Table(rows, colWidths=[126 * mm, 20 * mm, 40 * mm], rowHeights=heights, repeatRows=1)
-    commands = [
-        ("BACKGROUND", (0, 0), (-1, 0), BLUE),
-        ("GRID", (0, 0), (-1, -1), 0.6, BORDER),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 4),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-        ("TOPPADDING", (0, 0), (-1, -1), 1.5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 1.5),
-    ]
-    for index in range(1, len(rows)):
-        if index % 2 == 0:
-            commands.append(("BACKGROUND", (0, index), (-1, index), ROW_GREY))
-    table.setStyle(TableStyle(commands))
-    return table
+    # ------------------------------------------------------------------
+    # Terms + totals, side by side like the supplied reference.
+    # ------------------------------------------------------------------
+    bottom_top = table_bottom - 12
+    terms_w = 365
+    totals_x = left + terms_w + 10
+    totals_w = right - totals_x
+    terms_h = 132
 
+    _section(c, "TERMS AND CONDITIONS", left, bottom_top, terms_w)
+    c.setStrokeColor(colors.HexColor("#777777"))
+    c.rect(left, bottom_top - terms_h, terms_w, terms_h, fill=0, stroke=1)
 
-def _terms_table(quotation, company, styles):
-    terms = quotation.terms or company.quotation_terms
-    lines = [line.strip() for line in (terms or "").splitlines() if line.strip()]
+    terms = str(getattr(quotation, "terms", "") or getattr(company, "quotation_terms", "") or "")
+    lines = [line.strip() for line in terms.splitlines() if line.strip()]
     if not lines:
         lines = [
             "Customer will be billed after indicating acceptance of this quote.",
             "Payment will be due prior to delivery of service and goods.",
-            "Please contact us if you need any clarification about this quotation.",
+            "Please contact us if any information in this quotation requires correction.",
         ]
-    terms_text = "<br/>".join(f"{i}. {_clean(line)}" for i, line in enumerate(lines, 1))
-    terms_text += (
-        "<br/><br/><i><b>Customer Acceptance (sign below):</b></i>"
-        "<br/><br/>X _________________________________"
-        "<br/>Print Name: _________________________"
-    )
-    table = Table([
-        [Paragraph("TERMS AND CONDITIONS", styles["section"])],
-        [Paragraph(terms_text, styles["body"])],
-    ], colWidths=[110 * mm], rowHeights=[7 * mm, 47 * mm])
-    table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (0, 0), BLUE),
-        ("BOX", (0, 0), (-1, -1), 0.65, colors.HexColor("#777777")),
-        ("LEFTPADDING", (0, 0), (-1, -1), 4),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-        ("TOPPADDING", (0, 0), (-1, -1), 3),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-    ]))
-    return table
+    ty = bottom_top - 31
+    for number, line in enumerate(lines, 1):
+        ty = _draw_wrapped(c, f"{number}. {line}", left + 5, ty, terms_w - 10, size=7.5, leading=9, max_lines=2)
+        if ty < bottom_top - 77:
+            break
+    c.setFillColor(TEXT)
+    c.setFont(FONT_BOLD, 7.7)
+    c.drawString(left + 5, bottom_top - 88, "Customer Acceptance (sign below):")
+    c.setFont(FONT, 7.7)
+    c.drawString(left + 5, bottom_top - 108, "X __________________________________")
+    c.drawString(left + 5, bottom_top - 120, "Print Name: _________________________")
 
-
-def _totals_table(quotation, styles):
-    subtotal = _decimal(quotation.subtotal)
-    discount = _decimal(quotation.discount_amount)
+    subtotal = _decimal(getattr(quotation, "subtotal", 0))
+    discount = _decimal(getattr(quotation, "discount_amount", 0))
+    tax = _decimal(getattr(quotation, "tax_amount", 0))
     taxable = max(subtotal - discount, Decimal("0.00"))
-    tax = _decimal(quotation.tax_amount)
-    rate = (tax / taxable * Decimal("100")) if taxable else Decimal("0.00")
-
-    rows = [
+    tax_rate = (tax / taxable * Decimal("100")) if taxable else Decimal("0.00")
+    total_rows = [
         ("Subtotal", f"{subtotal:,.2f}"),
         ("Taxable", f"{taxable:,.2f}"),
-        ("Discount", f"{discount:,.2f}"),
-        ("Tax Rate", f"{rate:.2f}%"),
+        ("Tax Rate", f"{tax_rate:.2f}%"),
         ("Tax Due", f"{tax:,.2f}"),
         ("Other", "-"),
-        ("TOTAL", _money(quotation.grand_total)),
     ]
-    data = [[Paragraph(label, styles["body"]), Paragraph(value, styles["right"])] for label, value in rows]
-    data[-1] = [
-        Paragraph("TOTAL", ParagraphStyle("total_label", parent=styles["body"], fontName=FONT_BOLD, fontSize=10)),
-        Paragraph(_money(quotation.grand_total), ParagraphStyle("total_value", parent=styles["right"], fontName=FONT_BOLD, fontSize=10)),
-    ]
-    table = Table(data, colWidths=[40 * mm, 36 * mm], rowHeights=[6.8 * mm] * 7)
-    table.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 2),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 2),
-        ("BACKGROUND", (0, -1), (-1, -1), YELLOW),
-        ("LINEABOVE", (0, -1), (-1, -1), 0.8, colors.HexColor("#B28B00")),
-    ]))
-    return table
+    total_y = bottom_top - 13
+    c.setFont(FONT, 8)
+    for label, value in total_rows:
+        c.setFillColor(TEXT)
+        c.drawString(totals_x, total_y, label)
+        c.drawRightString(right, total_y, value)
+        total_y -= 19
 
+    c.setFillColor(YELLOW)
+    c.rect(totals_x, total_y - 4, totals_w, 22, fill=1, stroke=0)
+    c.setFillColor(TEXT)
+    c.setFont(FONT_BOLD, 9.5)
+    c.drawString(totals_x + 4, total_y + 3, "TOTAL")
+    c.drawRightString(right - 4, total_y + 3, _money(getattr(quotation, "grand_total", 0)))
 
-def quotation_pdf(quotation):
-    """Generate an A4 quotation closely matching the supplied reference image."""
-    company = CompanyProfile.get_default()
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=A4,
-        rightMargin=PAGE_MARGIN,
-        leftMargin=PAGE_MARGIN,
-        topMargin=10 * mm,
-        bottomMargin=10 * mm,
-        title=f"Quotation {quotation.quotation_number}",
-        author=company.name,
-        subject="Quotation",
-    )
-    styles = _styles()
-    story = [
-        _company_header(company, quotation, styles),
-        Spacer(1, 4 * mm),
-        _customer_table(quotation, styles),
-        Spacer(1, 4 * mm),
-        _items_table(quotation, styles),
-        Spacer(1, 4 * mm),
-    ]
+    # Footer.
+    footer = " | ".join(str(v) for v in (company.phone, company.email) if v)
+    c.setFillColor(TEXT)
+    c.setFont(FONT, 7.5)
+    if footer:
+        c.drawCentredString(PAGE_W / 2, 58, footer)
+    c.setFont(FONT_ITALIC, 9)
+    c.drawCentredString(PAGE_W / 2, 43, "Thank You For Your Business!")
 
-    bottom = Table(
-        [[_terms_table(quotation, company, styles), _totals_table(quotation, styles)]],
-        colWidths=[110 * mm, 76 * mm],
-    )
-    bottom.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 0),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ("TOPPADDING", (0, 0), (-1, -1), 0),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-    ]))
-    story.append(bottom)
-    story.append(Spacer(1, 4 * mm))
-
-    contact = " | ".join(x for x in [company.phone, company.email] if x)
-    if contact:
-        story.append(Paragraph(_clean(contact), ParagraphStyle(
-            "quote_contact", parent=styles["body"], alignment=TA_CENTER, fontSize=7.5,
-        )))
-    story.append(Spacer(1, 1 * mm))
-    story.append(Paragraph("Thank You For Your Business!", styles["footer"]))
-
-    doc.build(story, onFirstPage=_draw_page, onLaterPages=_draw_page)
+    c.showPage()
+    c.save()
     buffer.seek(0)
     return buffer
