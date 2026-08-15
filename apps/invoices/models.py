@@ -3,6 +3,18 @@ from django.db import models
 from apps.customers.models import Customer
 from apps.products.models import Product
 
+
+class GSTRate(models.Model):
+    rate = models.DecimalField(max_digits=5, decimal_places=2, unique=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["rate"]
+
+    def __str__(self):
+        return f"{self.rate:g}%"
+
+
 class Invoice(models.Model):
     invoice_number = models.CharField(max_length=40, unique=True, db_index=True)
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name="invoices")

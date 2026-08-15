@@ -1,5 +1,11 @@
 from django.contrib import admin
-from .models import Invoice, InvoiceItem
+from .models import GSTRate, Invoice, InvoiceItem
+
+
+@admin.register(GSTRate)
+class GSTRateAdmin(admin.ModelAdmin):
+    list_display = ("rate", "is_active")
+    list_editable = ("is_active",)
 
 class InvoiceItemInline(admin.TabularInline):
     model = InvoiceItem

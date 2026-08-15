@@ -1,9 +1,13 @@
 import logging
+import json
+from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from apps.core.models import CompanyProfile
+from apps.products.models import Product
 from .forms import InvoiceForm, InvoiceItemFormSet
 from .models import Invoice
 from .pdf import build_invoice_pdf
@@ -35,7 +39,11 @@ def invoice_create(request):
         logger.info("Invoice created | invoice=%s | user=%s | total=%s", invoice.invoice_number, request.user.username, invoice.grand_total)
         messages.success(request, "Invoice created successfully.")
         return redirect("invoice_detail", pk=invoice.pk)
-    return render(request, "invoices/form.html", {"form": form, "formset": formset, "title": "Create Invoice"})
+    product_values = {
+        str(product.pk): {"unit_price": str(product.selling_price), "gst_rate": str(product.gst_rate)}
+        for product in Product.objects.filter(is_active=True).only("id", "selling_price", "gst_rate")
+    }
+    return render(request, "invoices/form.html", {"form": form, "formset": formset, "title": "Create Invoice", "product_values": json.dumps(product_values)})
 
 @login_required
 def invoice_detail(request, pk):
@@ -46,4 +54,8 @@ def invoice_detail(request, pk):
 def invoice_pdf(request, pk):
     invoice = get_object_or_404(Invoice.objects.select_related("customer").prefetch_related("items__product"), pk=pk)
     logger.info("Invoice PDF generated | invoice=%s | user=%s", invoice.invoice_number, request.user.username)
-    return FileResponse(build_invoice_pdf(invoice), as_attachment=True, filename=f"{invoice.invoice_number}.pdf")
+    return FileResponse(
+        build_invoice_pdf(invoice, company=CompanyProfile.get_default()),
+        as_attachment=True,
+        filename=f"{invoice.invoice_number}.pdf",
+    )
