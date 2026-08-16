@@ -4,120 +4,320 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#1f5fbf">
     <title>Login | ITGenius Billing</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        :root { --itg-blue: #1f5fbf; --itg-dark: #10233f; --itg-light: #f4f8ff; }
-        body { min-height: 100vh; margin: 0; background: linear-gradient(135deg, #eef5ff 0%, #ffffff 52%, #eaf2ff 100%); color: #172033; }
-        .login-shell { min-height: 100vh; display: flex; align-items: center; padding: 32px 16px; }
-        .login-card { width: 100%; max-width: 980px; overflow: hidden; border: 0; border-radius: 24px; box-shadow: 0 24px 70px rgba(16,35,63,.14); background: #fff; }
-        .brand-panel { position: relative; min-height: 600px; padding: 52px; color: #fff; background: linear-gradient(145deg, #123b73, #1f66c7 60%, #3185e8); overflow: hidden; }
-        .brand-panel:before, .brand-panel:after { content: ""; position: absolute; border-radius: 50%; background: rgba(255,255,255,.09); }
-        .brand-panel:before { width: 280px; height: 280px; right: -100px; top: -80px; }
-        .brand-panel:after { width: 220px; height: 220px; left: -100px; bottom: -90px; }
+        :root {
+            --itg-primary: #1f5fbf;
+            --itg-primary-dark: #16498f;
+            --itg-primary-soft: #eef5ff;
+            --itg-text: #172033;
+            --itg-muted: #718096;
+            --itg-border: #dbe4f0;
+            --itg-white: #ffffff;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            color: var(--itg-text);
+            background: linear-gradient(135deg, #eef5ff 0%, #f8fbff 48%, #eaf2ff 100%);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        .login-shell {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 16px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 1040px;
+            overflow: hidden;
+            background: var(--itg-white);
+            border: 1px solid rgba(31, 95, 191, .10);
+            border-radius: 22px;
+            box-shadow: 0 22px 60px rgba(16, 35, 63, .14);
+        }
+
+        .brand-panel {
+            position: relative;
+            min-height: 590px;
+            padding: 48px;
+            color: #fff;
+            overflow: hidden;
+            background: linear-gradient(145deg, var(--itg-primary-dark) 0%, var(--itg-primary) 62%, #2b76d2 100%);
+        }
+
+        .brand-panel::before,
+        .brand-panel::after {
+            content: "";
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            background: rgba(255,255,255,.08);
+        }
+
+        .brand-panel::before { width: 330px; height: 330px; right: -150px; top: -145px; }
+        .brand-panel::after { width: 250px; height: 250px; left: -145px; bottom: -145px; }
+
         .brand-content { position: relative; z-index: 1; }
-        .logo { width: 76px; height: 76px; object-fit: contain; border-radius: 18px; background: #fff; padding: 7px; box-shadow: 0 12px 28px rgba(0,0,0,.16); }
-        .brand-title { font-size: 2rem; font-weight: 800; letter-spacing: -.5px; }
-        .brand-subtitle { color: rgba(255,255,255,.82); }
-        .feature { display: flex; gap: 14px; align-items: center; margin-top: 22px; }
-        .feature-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: rgba(255,255,255,.13); font-size: 18px; }
-        .form-panel { padding: 52px; }
-        .welcome { font-size: 1.8rem; font-weight: 800; color: var(--itg-dark); }
-        .muted { color: #738096; }
-        .form-label { font-size: .9rem; font-weight: 700; color: #33415c; }
-        .form-control { border: 1px solid #d9e1ed; border-radius: 12px; min-height: 48px; padding: 12px 14px; box-shadow: none; }
-        .form-control:focus { border-color: var(--itg-blue); box-shadow: 0 0 0 4px rgba(31,95,191,.10); }
-        .login-btn { min-height: 50px; border: 0; border-radius: 12px; font-weight: 700; background: linear-gradient(90deg, #1f5fbf, #2877dc); box-shadow: 0 10px 24px rgba(31,95,191,.22); }
-        .login-btn:hover { background: linear-gradient(90deg, #194f9e, #2069c7); }
-        .security-note { background: var(--itg-light); border-radius: 12px; padding: 12px 14px; font-size: .82rem; color: #627089; }
-        .error-box { border-radius: 12px; }
-        @media (max-width: 767.98px) { .brand-panel { min-height: auto; padding: 32px; } .brand-panel .feature { display: none; } .form-panel { padding: 32px 24px; } .login-card { border-radius: 18px; } }
+
+        .logo {
+            width: 72px;
+            height: 72px;
+            object-fit: contain;
+            border-radius: 16px;
+            padding: 6px;
+            background: #fff;
+            box-shadow: 0 10px 26px rgba(0,0,0,.16);
+        }
+
+        .brand-title {
+            margin-top: 20px;
+            font-size: clamp(1.8rem, 3vw, 2.35rem);
+            line-height: 1.1;
+            font-weight: 800;
+            letter-spacing: -.7px;
+        }
+
+        .brand-subtitle {
+            color: rgba(255,255,255,.84);
+            line-height: 1.6;
+        }
+
+        .feature-list { margin-top: 38px; }
+
+        .feature {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            margin-top: 18px;
+        }
+
+        .feature-icon {
+            flex: 0 0 42px;
+            width: 42px;
+            height: 42px;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            color: #fff;
+            background: rgba(255,255,255,.13);
+            border: 1px solid rgba(255,255,255,.12);
+            font-size: 17px;
+        }
+
+        .form-panel {
+            min-height: 590px;
+            padding: 54px 58px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .welcome {
+            font-size: clamp(1.65rem, 3vw, 2rem);
+            line-height: 1.2;
+            font-weight: 800;
+            color: var(--itg-text);
+            letter-spacing: -.5px;
+        }
+
+        .muted { color: var(--itg-muted); }
+
+        .form-label {
+            margin-bottom: 7px;
+            font-size: .88rem;
+            font-weight: 700;
+            color: #33415c;
+        }
+
+        .form-control {
+            width: 100%;
+            min-height: 50px;
+            padding: 12px 14px;
+            border: 1px solid var(--itg-border);
+            border-radius: 11px;
+            color: var(--itg-text);
+            background: #fff;
+            box-shadow: none;
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--itg-primary);
+            box-shadow: 0 0 0 4px rgba(31,95,191,.11);
+        }
+
+        .form-check-input:checked {
+            border-color: var(--itg-primary);
+            background-color: var(--itg-primary);
+        }
+
+        .form-check-input:focus {
+            border-color: var(--itg-primary);
+            box-shadow: 0 0 0 3px rgba(31,95,191,.10);
+        }
+
+        .login-btn {
+            min-height: 50px;
+            border: 0;
+            border-radius: 11px;
+            font-weight: 750;
+            letter-spacing: .1px;
+            background: var(--itg-primary);
+            box-shadow: 0 9px 20px rgba(31,95,191,.20);
+            transition: transform .15s ease, background .2s ease, box-shadow .2s ease;
+        }
+
+        .login-btn:hover,
+        .login-btn:focus {
+            background: var(--itg-primary-dark);
+            box-shadow: 0 11px 24px rgba(31,95,191,.25);
+        }
+
+        .login-btn:active { transform: translateY(1px); }
+
+        .security-note {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 11px 13px;
+            color: #607089;
+            background: var(--itg-primary-soft);
+            border: 1px solid #dceaff;
+            border-radius: 11px;
+            font-size: .8rem;
+        }
+
+        .security-icon { color: var(--itg-primary); font-size: 15px; }
+
+        .error-box { border-radius: 11px; }
+
+        .signup-link {
+            color: var(--itg-primary);
+            font-weight: 700;
+        }
+
+        .signup-link:hover { color: var(--itg-primary-dark); }
+
+        .footer-text { color: #8a96a8; }
+
+        @media (max-width: 991.98px) {
+            .brand-panel { min-height: 0; padding: 36px; }
+            .form-panel { min-height: 0; padding: 42px 36px; }
+            .feature-list { margin-top: 26px; }
+        }
+
+        @media (max-width: 575.98px) {
+            .login-shell { padding: 12px; align-items: flex-start; }
+            .login-card { margin-top: 8px; border-radius: 18px; }
+            .brand-panel { padding: 30px 24px; }
+            .form-panel { padding: 32px 24px 28px; }
+            .logo { width: 62px; height: 62px; }
+            .brand-title { margin-top: 14px; }
+            .feature-list { display: none; }
+        }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-dark bg-dark navbar-expand-lg">
-        <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center gap-2" href="/"><img
-                    src="{% static 'images/itgenius-computer-logo.jpg' %}" alt="ITGenius Computer logo" width="38"
-                    height="38" class="rounded bg-white object-fit-contain">ITGenius Computer</a>
-            {% if request.user.is_authenticated %}
-            <div class="navbar-nav ms-auto"><a class="nav-link" href="/customers/">Customers</a><a class="nav-link"
-                    href="/admin/">Admin</a></div>
-            {% endif %}
-        </div>
-    </nav>
 <div class="login-shell">
-    <div class="container">
-        <div class="login-card mx-auto">
-            <div class="row g-0">
-                <div class="col-lg-6">
-                    <section class="brand-panel h-100">
-                        <div class="brand-content">
-                            <img src="{% static 'images/itgenius-computer-logo.jpg' %}" alt="ITGenius Computer" class="logo mb-4">
-                            <div class="brand-title">ITGenius Billing</div>
-                            <p class="brand-subtitle fs-5 mt-2 mb-5">Smart, simple and professional billing management.</p>
+    <main class="login-card">
+        <div class="row g-0">
+            <div class="col-lg-6">
+                <section class="brand-panel h-100" aria-label="ITGenius Billing">
+                    <div class="brand-content">
+                        <img src="{% static 'images/itgenius-computer-logo.jpg' %}"
+                             alt="ITGenius Computer logo" class="logo">
 
+                        <div class="brand-title">ITGenius Billing</div>
+                        <p class="brand-subtitle fs-6 mt-3 mb-0">
+                            Smart, simple and professional billing management for your business.
+                        </p>
+
+                        <div class="feature-list">
                             <div class="feature">
                                 <div class="feature-icon">₹</div>
-                                <div><strong>Complete Billing</strong><div class="small brand-subtitle">Quotation, invoice and payment management</div></div>
+                                <div>
+                                    <strong>Complete Billing</strong>
+                                    <div class="small brand-subtitle">Quotation, invoice and payment management</div>
+                                </div>
                             </div>
                             <div class="feature">
                                 <div class="feature-icon">✓</div>
-                                <div><strong>GST Ready</strong><div class="small brand-subtitle">Accurate tax and billing calculations</div></div>
+                                <div>
+                                    <strong>GST Ready</strong>
+                                    <div class="small brand-subtitle">Accurate tax and billing calculations</div>
+                                </div>
                             </div>
                             <div class="feature">
                                 <div class="feature-icon">▣</div>
-                                <div><strong>Business Reports</strong><div class="small brand-subtitle">Sales, collection and outstanding reports</div></div>
+                                <div>
+                                    <strong>Business Reports</strong>
+                                    <div class="small brand-subtitle">Sales, collection and outstanding reports</div>
+                                </div>
                             </div>
                         </div>
-                    </section>
-                </div>
+                    </div>
+                </section>
+            </div>
 
-                <div class="col-lg-6">
-                    <section class="form-panel">
-                        <div class="mb-4">
-                            <div class="welcome">Welcome back 👋</div>
-                            <p class="muted mb-0 mt-2">Sign in to continue to your billing dashboard.</p>
-                        </div>
+            <div class="col-lg-6">
+                <section class="form-panel">
+                    <div class="mb-4">
+                        <div class="welcome">Welcome back 👋</div>
+                        <p class="muted mb-0 mt-2">Sign in to continue to your billing dashboard.</p>
+                    </div>
 
-                        {% if form.non_field_errors %}
-                            <div class="alert alert-danger error-box">{{ form.non_field_errors }}</div>
-                        {% endif %}
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger error-box mb-3">{{ form.non_field_errors }}</div>
+                    {% endif %}
 
-                        <form method="post" novalidate>
-                            {% csrf_token %}
-                            {% for field in form %}
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {% for field in form %}
                             <div class="mb-3">
                                 <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
                                 {{ field }}
-                                {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                                {% for error in field.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
                             </div>
-                            {% endfor %}
+                        {% endfor %}
 
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="remember">
-                                    <label class="form-check-label small text-muted" for="remember">Remember me</label>
-                                </div>
-                                <span class="small text-muted">Secure login</span>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="remember">
+                                <label class="form-check-label small muted" for="remember">Remember me</label>
                             </div>
-
-                            <button type="submit" class="btn btn-primary login-btn w-100">Sign In</button>
-                        </form>
-
-                        <div class="security-note mt-4">🔒 Your account credentials are protected by Django authentication.</div>
-
-                        <div class="text-center mt-4">
-                            <span class="muted">Don't have an account?</span>
-                            <a href="{% url 'signup' %}" class="text-decoration-none fw-bold ms-1">Create account</a>
+                            <span class="small muted">Secure login</span>
                         </div>
 
-                        <div class="text-center mt-4 small text-muted">© {% now "Y" %} ITGenius Computer</div>
-                    </section>
-                </div>
+                        <button type="submit" class="btn btn-primary login-btn w-100">Sign In</button>
+                    </form>
+
+                    <div class="security-note mt-4">
+                        <span class="security-icon">🔒</span>
+                        <span>Your account credentials are protected by Django authentication.</span>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <span class="muted">Don't have an account?</span>
+                        <a href="{% url 'signup' %}" class="text-decoration-none signup-link ms-1">Create account</a>
+                    </div>
+
+                    <div class="text-center mt-4 small footer-text">© {% now "Y" %} ITGenius Computer</div>
+                </section>
             </div>
         </div>
-    </div>
+    </main>
 </div>
 </body>
 </html>
