@@ -8,311 +8,66 @@
     <title>Login | ITGenius Billing</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        :root {
-            --itg-primary: #1f5fbf;
-            --itg-primary-dark: #16498f;
-            --itg-primary-soft: #eef5ff;
-            --itg-text: #172033;
-            --itg-muted: #718096;
-            --itg-border: #dbe4f0;
-            --itg-white: #ffffff;
-        }
-
-        * { box-sizing: border-box; }
-
-        body {
-            min-height: 100vh;
-            margin: 0;
-            color: var(--itg-text);
-            background: linear-gradient(135deg, #eef5ff 0%, #f8fbff 48%, #eaf2ff 100%);
-            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        }
-
-        .login-shell {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 28px 16px;
-        }
-
-        .login-card {
-            width: 100%;
-            max-width: 1040px;
-            overflow: hidden;
-            background: var(--itg-white);
-            border: 1px solid rgba(31, 95, 191, .10);
-            border-radius: 22px;
-            box-shadow: 0 22px 60px rgba(16, 35, 63, .14);
-        }
-
-        .brand-panel {
-            position: relative;
-            min-height: 590px;
-            padding: 48px;
-            color: #fff;
-            overflow: hidden;
-            background: linear-gradient(145deg, var(--itg-primary-dark) 0%, var(--itg-primary) 62%, #2b76d2 100%);
-        }
-
-        .brand-panel::before,
-        .brand-panel::after {
-            content: "";
-            position: absolute;
-            border-radius: 50%;
-            pointer-events: none;
-            background: rgba(255,255,255,.08);
-        }
-
-        .brand-panel::before { width: 330px; height: 330px; right: -150px; top: -145px; }
-        .brand-panel::after { width: 250px; height: 250px; left: -145px; bottom: -145px; }
-
-        .brand-content { position: relative; z-index: 1; }
-
-        .logo {
-            width: 72px;
-            height: 72px;
-            object-fit: contain;
-            border-radius: 16px;
-            padding: 6px;
-            background: #fff;
-            box-shadow: 0 10px 26px rgba(0,0,0,.16);
-        }
-
-        .brand-title {
-            margin-top: 20px;
-            font-size: clamp(1.8rem, 3vw, 2.35rem);
-            line-height: 1.1;
-            font-weight: 800;
-            letter-spacing: -.7px;
-        }
-
-        .brand-subtitle {
-            color: rgba(255,255,255,.84);
-            line-height: 1.6;
-        }
-
-        .feature-list { margin-top: 38px; }
-
-        .feature {
-            display: flex;
-            gap: 14px;
-            align-items: center;
-            margin-top: 18px;
-        }
-
-        .feature-icon {
-            flex: 0 0 42px;
-            width: 42px;
-            height: 42px;
-            display: grid;
-            place-items: center;
-            border-radius: 12px;
-            color: #fff;
-            background: rgba(255,255,255,.13);
-            border: 1px solid rgba(255,255,255,.12);
-            font-size: 17px;
-        }
-
-        .form-panel {
-            min-height: 590px;
-            padding: 54px 58px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .welcome {
-            font-size: clamp(1.65rem, 3vw, 2rem);
-            line-height: 1.2;
-            font-weight: 800;
-            color: var(--itg-text);
-            letter-spacing: -.5px;
-        }
-
-        .muted { color: var(--itg-muted); }
-
-        .form-label {
-            margin-bottom: 7px;
-            font-size: .88rem;
-            font-weight: 700;
-            color: #33415c;
-        }
-
-        .form-control {
-            width: 100%;
-            min-height: 50px;
-            padding: 12px 14px;
-            border: 1px solid var(--itg-border);
-            border-radius: 11px;
-            color: var(--itg-text);
-            background: #fff;
-            box-shadow: none;
-            transition: border-color .2s ease, box-shadow .2s ease;
-        }
-
-        .form-control:focus {
-            border-color: var(--itg-primary);
-            box-shadow: 0 0 0 4px rgba(31,95,191,.11);
-        }
-
-        .form-check-input:checked {
-            border-color: var(--itg-primary);
-            background-color: var(--itg-primary);
-        }
-
-        .form-check-input:focus {
-            border-color: var(--itg-primary);
-            box-shadow: 0 0 0 3px rgba(31,95,191,.10);
-        }
-
-        .login-btn {
-            min-height: 50px;
-            border: 0;
-            border-radius: 11px;
-            font-weight: 750;
-            letter-spacing: .1px;
-            background: var(--itg-primary);
-            box-shadow: 0 9px 20px rgba(31,95,191,.20);
-            transition: transform .15s ease, background .2s ease, box-shadow .2s ease;
-        }
-
-        .login-btn:hover,
-        .login-btn:focus {
-            background: var(--itg-primary-dark);
-            box-shadow: 0 11px 24px rgba(31,95,191,.25);
-        }
-
-        .login-btn:active { transform: translateY(1px); }
-
-        .security-note {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            padding: 11px 13px;
-            color: #607089;
-            background: var(--itg-primary-soft);
-            border: 1px solid #dceaff;
-            border-radius: 11px;
-            font-size: .8rem;
-        }
-
-        .security-icon { color: var(--itg-primary); font-size: 15px; }
-
-        .error-box { border-radius: 11px; }
-
-        .signup-link {
-            color: var(--itg-primary);
-            font-weight: 700;
-        }
-
-        .signup-link:hover { color: var(--itg-primary-dark); }
-
-        .footer-text { color: #8a96a8; }
-
-        @media (max-width: 991.98px) {
-            .brand-panel { min-height: 0; padding: 36px; }
-            .form-panel { min-height: 0; padding: 42px 36px; }
-            .feature-list { margin-top: 26px; }
-        }
-
-        @media (max-width: 575.98px) {
-            .login-shell { padding: 12px; align-items: flex-start; }
-            .login-card { margin-top: 8px; border-radius: 18px; }
-            .brand-panel { padding: 30px 24px; }
-            .form-panel { padding: 32px 24px 28px; }
-            .logo { width: 62px; height: 62px; }
-            .brand-title { margin-top: 14px; }
-            .feature-list { display: none; }
-        }
+        :root { --itg-primary:#1f5fbf; --itg-primary-dark:#16498f; --itg-primary-soft:#eef5ff; --itg-text:#172033; --itg-muted:#718096; --itg-border:#dbe4f0; }
+        *{box-sizing:border-box} body{min-height:100vh;margin:0;color:var(--itg-text);background:linear-gradient(135deg,#eef5ff 0%,#f8fbff 48%,#eaf2ff 100%);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+        .top-nav{background:var(--itg-primary-dark);box-shadow:0 3px 14px rgba(16,35,63,.16);min-height:64px}
+        .top-nav .navbar-brand{font-weight:750;letter-spacing:.1px;color:#fff}.top-nav .navbar-brand img{width:40px;height:40px;object-fit:contain;background:#fff;padding:2px;border-radius:8px}.top-nav .nav-link{color:rgba(255,255,255,.88);font-weight:600}.top-nav .nav-link:hover{color:#fff}
+        .login-shell{min-height:calc(100vh - 64px);display:flex;align-items:center;justify-content:center;padding:30px 16px}
+        .login-card{width:100%;max-width:1040px;overflow:hidden;background:#fff;border:1px solid rgba(31,95,191,.10);border-radius:22px;box-shadow:0 22px 60px rgba(16,35,63,.14)}
+        .brand-panel{position:relative;min-height:590px;padding:48px;color:#fff;overflow:hidden;background:linear-gradient(145deg,var(--itg-primary-dark) 0%,var(--itg-primary) 62%,#2b76d2 100%)}
+        .brand-panel:before,.brand-panel:after{content:"";position:absolute;border-radius:50%;pointer-events:none;background:rgba(255,255,255,.08)}.brand-panel:before{width:330px;height:330px;right:-150px;top:-145px}.brand-panel:after{width:250px;height:250px;left:-145px;bottom:-145px}.brand-content{position:relative;z-index:1}
+        .logo{width:72px;height:72px;object-fit:contain;border-radius:16px;padding:6px;background:#fff;box-shadow:0 10px 26px rgba(0,0,0,.16)}.brand-title{margin-top:20px;font-size:clamp(1.8rem,3vw,2.35rem);line-height:1.1;font-weight:800;letter-spacing:-.7px}.brand-subtitle{color:rgba(255,255,255,.84);line-height:1.6}.feature-list{margin-top:38px}.feature{display:flex;gap:14px;align-items:center;margin-top:18px}.feature-icon{flex:0 0 42px;width:42px;height:42px;display:grid;place-items:center;border-radius:12px;color:#fff;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.12);font-size:17px}
+        .form-panel{min-height:590px;padding:54px 58px;display:flex;flex-direction:column;justify-content:center}.welcome{font-size:clamp(1.65rem,3vw,2rem);line-height:1.2;font-weight:800;color:var(--itg-text);letter-spacing:-.5px}.muted{color:var(--itg-muted)}.form-label{margin-bottom:7px;font-size:.88rem;font-weight:700;color:#33415c}.form-control{width:100%;min-height:50px;padding:12px 14px;border:1px solid var(--itg-border);border-radius:11px;color:var(--itg-text);background:#fff;box-shadow:none;transition:border-color .2s,box-shadow .2s}.form-control:focus{border-color:var(--itg-primary);box-shadow:0 0 0 4px rgba(31,95,191,.11)}.form-check-input:checked{border-color:var(--itg-primary);background-color:var(--itg-primary)}.form-check-input:focus{border-color:var(--itg-primary);box-shadow:0 0 0 3px rgba(31,95,191,.10)}
+        .login-btn{min-height:50px;border:0;border-radius:11px;font-weight:750;background:var(--itg-primary);box-shadow:0 9px 20px rgba(31,95,191,.20);transition:transform .15s,background .2s,box-shadow .2s}.login-btn:hover,.login-btn:focus{background:var(--itg-primary-dark);box-shadow:0 11px 24px rgba(31,95,191,.25)}.login-btn:active{transform:translateY(1px)}.security-note{display:flex;align-items:center;gap:9px;padding:11px 13px;color:#607089;background:var(--itg-primary-soft);border:1px solid #dceaff;border-radius:11px;font-size:.8rem}.security-icon{color:var(--itg-primary);font-size:15px}.error-box{border-radius:11px}.signup-link{color:var(--itg-primary);font-weight:700}.signup-link:hover{color:var(--itg-primary-dark)}.footer-text{color:#8a96a8}
+        @media(max-width:991.98px){.brand-panel{min-height:0;padding:36px}.form-panel{min-height:0;padding:42px 36px}.feature-list{margin-top:26px}}
+        @media(max-width:575.98px){.top-nav{min-height:58px}.login-shell{min-height:calc(100vh - 58px);padding:12px;align-items:flex-start}.login-card{margin-top:8px;border-radius:18px}.brand-panel{padding:30px 24px}.form-panel{padding:32px 24px 28px}.logo{width:62px;height:62px}.brand-title{margin-top:14px}.feature-list{display:none}}
     </style>
 </head>
 <body>
+<nav class="navbar navbar-expand-lg top-nav">
+    <div class="container-fluid px-3 px-lg-4">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+            <img src="{% static 'images/itgenius-computer-logo.jpg' %}" alt="ITGenius Computer logo">
+            <span>ITGenius Computer</span>
+        </a>
+        {% if request.user.is_authenticated %}
+        <div class="navbar-nav ms-auto">
+            <a class="nav-link px-3" href="/customers/">Customers</a>
+            <a class="nav-link px-3" href="/admin/">Admin</a>
+        </div>
+        {% endif %}
+    </div>
+</nav>
+
 <div class="login-shell">
-    <main class="login-card">
+    <main class="login-card mx-auto">
         <div class="row g-0">
             <div class="col-lg-6">
                 <section class="brand-panel h-100" aria-label="ITGenius Billing">
                     <div class="brand-content">
-                        <img src="{% static 'images/itgenius-computer-logo.jpg' %}"
-                             alt="ITGenius Computer logo" class="logo">
-
+                        <img src="{% static 'images/itgenius-computer-logo.jpg' %}" alt="ITGenius Computer logo" class="logo">
                         <div class="brand-title">ITGenius Billing</div>
-                        <p class="brand-subtitle fs-6 mt-3 mb-0">
-                            Smart, simple and professional billing management for your business.
-                        </p>
-
+                        <p class="brand-subtitle fs-6 mt-3 mb-0">Smart, simple and professional billing management for your business.</p>
                         <div class="feature-list">
-                            <div class="feature">
-                                <div class="feature-icon">₹</div>
-                                <div>
-                                    <strong>Complete Billing</strong>
-                                    <div class="small brand-subtitle">Quotation, invoice and payment management</div>
-                                </div>
-                            </div>
-                            <div class="feature">
-                                <div class="feature-icon">✓</div>
-                                <div>
-                                    <strong>GST Ready</strong>
-                                    <div class="small brand-subtitle">Accurate tax and billing calculations</div>
-                                </div>
-                            </div>
-                            <div class="feature">
-                                <div class="feature-icon">▣</div>
-                                <div>
-                                    <strong>Business Reports</strong>
-                                    <div class="small brand-subtitle">Sales, collection and outstanding reports</div>
-                                </div>
-                            </div>
+                            <div class="feature"><div class="feature-icon">₹</div><div><strong>Complete Billing</strong><div class="small brand-subtitle">Quotation, invoice and payment management</div></div></div>
+                            <div class="feature"><div class="feature-icon">✓</div><div><strong>GST Ready</strong><div class="small brand-subtitle">Accurate tax and billing calculations</div></div></div>
+                            <div class="feature"><div class="feature-icon">▣</div><div><strong>Business Reports</strong><div class="small brand-subtitle">Sales, collection and outstanding reports</div></div></div>
                         </div>
                     </div>
                 </section>
             </div>
-
             <div class="col-lg-6">
                 <section class="form-panel">
-                    <div class="mb-4">
-                        <div class="welcome">Welcome back 👋</div>
-                        <p class="muted mb-0 mt-2">Sign in to continue to your billing dashboard.</p>
-                    </div>
-
-                    {% if form.non_field_errors %}
-                        <div class="alert alert-danger error-box mb-3">{{ form.non_field_errors }}</div>
-                    {% endif %}
-
+                    <div class="mb-4"><div class="welcome">Welcome back 👋</div><p class="muted mb-0 mt-2">Sign in to continue to your billing dashboard.</p></div>
+                    {% if form.non_field_errors %}<div class="alert alert-danger error-box mb-3">{{ form.non_field_errors }}</div>{% endif %}
                     <form method="post" novalidate>
                         {% csrf_token %}
-                        {% for field in form %}
-                            <div class="mb-3">
-                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                                {{ field }}
-                                {% for error in field.errors %}
-                                    <div class="text-danger small mt-1">{{ error }}</div>
-                                {% endfor %}
-                            </div>
-                        {% endfor %}
-
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="remember">
-                                <label class="form-check-label small muted" for="remember">Remember me</label>
-                            </div>
-                            <span class="small muted">Secure login</span>
-                        </div>
-
+                        {% for field in form %}<div class="mb-3"><label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}</div>{% endfor %}
+                        <div class="d-flex justify-content-between align-items-center mb-4"><div class="form-check"><input class="form-check-input" type="checkbox" id="remember"><label class="form-check-label small muted" for="remember">Remember me</label></div><span class="small muted">Secure login</span></div>
                         <button type="submit" class="btn btn-primary login-btn w-100">Sign In</button>
                     </form>
-
-                    <div class="security-note mt-4">
-                        <span class="security-icon">🔒</span>
-                        <span>Your account credentials are protected by Django authentication.</span>
-                    </div>
-
-                    <div class="text-center mt-4">
-                        <span class="muted">Don't have an account?</span>
-                        <a href="{% url 'signup' %}" class="text-decoration-none signup-link ms-1">Create account</a>
-                    </div>
-
+                    <div class="security-note mt-4"><span class="security-icon">🔒</span><span>Your account credentials are protected by Django authentication.</span></div>
+                    <div class="text-center mt-4"><span class="muted">Don't have an account?</span><a href="{% url 'signup' %}" class="text-decoration-none signup-link ms-1">Create account</a></div>
                     <div class="text-center mt-4 small footer-text">© {% now "Y" %} ITGenius Computer</div>
                 </section>
             </div>
