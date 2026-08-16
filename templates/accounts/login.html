@@ -35,6 +35,17 @@
     </style>
 </head>
 <body>
+    <nav class="navbar navbar-dark bg-dark navbar-expand-lg">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/"><img
+                    src="{% static 'images/itgenius-computer-logo.jpg' %}" alt="ITGenius Computer logo" width="38"
+                    height="38" class="rounded bg-white object-fit-contain">ITGenius Computer</a>
+            {% if request.user.is_authenticated %}
+            <div class="navbar-nav ms-auto"><a class="nav-link" href="/customers/">Customers</a><a class="nav-link"
+                    href="/admin/">Admin</a></div>
+            {% endif %}
+        </div>
+    </nav>
 <div class="login-shell">
     <div class="container">
         <div class="login-card mx-auto">
