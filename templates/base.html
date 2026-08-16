@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -10,7 +11,7 @@
 {% if request.user.is_authenticated and sidebar_items %}
 <div class="d-flex min-vh-100">
     <aside class="bg-dark text-white d-flex flex-column p-3" style="width: 250px;">
-        <a class="fs-5 fw-semibold text-white text-decoration-none mb-4" href="{% url 'dashboard' %}">ITGenius Billing</a>
+        <a class="d-flex align-items-center gap-2 fs-5 fw-semibold text-white text-decoration-none mb-4" href="{% url 'dashboard' %}"><img src="{% static 'images/itgenius-computer-logo.jpg' %}" alt="ITGenius Computer logo" width="42" height="42" class="rounded bg-white object-fit-contain">ITGenius Billing</a>
         <nav class="nav nav-pills flex-column gap-1">
             {% for item in sidebar_items %}
             <a class="nav-link {% if item.key == active_sidebar_item %}active{% else %}text-white{% endif %}" href="{{ item.url }}">{{ item.label }}</a>
@@ -25,7 +26,7 @@
 {% else %}
 <nav class="navbar navbar-dark bg-dark navbar-expand-lg">
     <div class="container-fluid">
-        <a class="navbar-brand" href="/">ITGenius Billing</a>
+        <a class="navbar-brand d-flex align-items-center gap-2" href="/"><img src="{% static 'images/itgenius-computer-logo.jpg' %}" alt="ITGenius Computer logo" width="38" height="38" class="rounded bg-white object-fit-contain">ITGenius Billing</a>
         {% if request.user.is_authenticated %}
         <div class="navbar-nav ms-auto"><a class="nav-link" href="/customers/">Customers</a><a class="nav-link" href="/admin/">Admin</a></div>
         {% endif %}
